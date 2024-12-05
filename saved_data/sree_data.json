@@ -1,0 +1,16 @@
+{
+    "name": "sree",
+    "age": 45,
+    "email": "kunnathsreelesh@gmail.com",
+    "phone": "017632815898",
+    "address": "",
+    "habits": {
+        "morning_routine": [],
+        "dietary_preferences": [],
+        "hobbies": [],
+        "sleep_schedule": {
+            "bedtime": "",
+            "wake_time": ""
+        }
+    }
+}

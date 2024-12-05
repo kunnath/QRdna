@@ -1,0 +1,22 @@
+{
+    "name": "Sreelesh",
+    "age": 45,
+    "email": "kunnathsreelesh@gmail.com",
+    "phone": "017632815898",
+    "address": "Prendener str.12 , Berlin ,Germany",
+    "habits": {
+        "morning_routine": [
+            "morning walk and cofee"
+        ],
+        "dietary_preferences": [
+            "milk"
+        ],
+        "hobbies": [
+            "footbal"
+        ],
+        "sleep_schedule": {
+            "bedtime": "10",
+            "wake_time": "6"
+        }
+    }
+}
