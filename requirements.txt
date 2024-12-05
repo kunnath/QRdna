@@ -1,5 +1,5 @@
-# requirements
-streamlit
-qrcode
-Pillow
-pyzbar
+streamlit==1.40.2
+qrcode==8.0
+Pillow==11.0.0
+pyzbar==0.1.9
+opencv-python==4.8.0.76
