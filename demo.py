@@ -2,15 +2,14 @@ import streamlit as st
 import json
 import os
 import qrcode
-import base64
+from pyzbar.pyzbar import decode
 from PIL import Image
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 # Directory to save files
 SAVE_DIR = "saved_data"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
+# Helper Functions
 def save_json_file(data, filename):
     filepath = os.path.join(SAVE_DIR, filename)
     with open(filepath, "w") as json_file:
@@ -18,25 +17,32 @@ def save_json_file(data, filename):
     return filepath
 
 def generate_qr_code(data, filename):
-    qr = qrcode.make(data)
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill="black", back_color="white")
     qr_filepath = os.path.join(SAVE_DIR, filename)
-    qr.save(qr_filepath)
+    img.save(qr_filepath)
     return qr_filepath
 
-def decode_qr_code(qr_filepath):
-    img = Image.open(qr_filepath)
-    decoded_data = ""
+def decode_qr_code(uploaded_file):
     try:
-        from pyzbar.pyzbar import decode
-        qr_data = decode(img)
+        # Open the uploaded file as an image
+        image = Image.open(uploaded_file)
+        # Decode the QR code
+        qr_data = decode(image)
         if qr_data:
-            decoded_data = qr_data[0].data.decode("utf-8")
-    except ImportError:
-        st.error("pyzbar module not found. Install with 'pip install pyzbar'.")
-    return decoded_data
+            return qr_data[0].data.decode("utf-8")
+        else:
+            return "No QR code found in the uploaded image."
+    except Exception as e:
+        return f"Error decoding QR code: {e}"
 
 def compare_profiles_ai(profile1, profile2):
-    # Combine text data from the profiles into strings for comparison
+    from sklearn.feature_extraction.text import CountVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+
+    # Combine profile attributes into strings for comparison
     profile1_text = " ".join(
         profile1.get("hobbies", []) +
         profile1.get("tastes", []) +
@@ -50,18 +56,15 @@ def compare_profiles_ai(profile1, profile2):
         profile2.get("preferences", [])
     )
 
-    # Vectorize the combined text data
-    vectorizer = TfidfVectorizer().fit_transform([profile1_text, profile2_text])
+    # Vectorize and calculate similarity
+    vectorizer = CountVectorizer().fit_transform([profile1_text, profile2_text])
     vectors = vectorizer.toarray()
+    cosine_sim = cosine_similarity(vectors)
+    return cosine_sim[0][1] * 100  # Return percentage similarity
 
-    # Calculate the cosine similarity between the profiles
-    similarity = cosine_similarity([vectors[0]], [vectors[1]])
-    match_percentage = similarity[0][0] * 100  # Convert to percentage
-
-    return match_percentage
-
+# Streamlit App
 def main():
-    st.title("Profile JSON Generator and Comparison")
+    st.title("Profile JSON Generator, Comparison, and QR Code")
 
     # Tabs for separate sections
     tabs = ["Contact Sharing JSON Generator", "Compare Profiles", "Load JSON File to Generate QR Code", "Load and Decode QR Code"]
@@ -98,15 +101,17 @@ def main():
             "preferences": [item.strip() for item in preferences.split(',') if item.strip()],
         }
 
-        # Save JSON file
+        # Save JSON file and optionally generate QR code
         if st.button("Save JSON and Generate QR Code"):
             filename = f"{name.replace(' ', '_').lower()}_data.json"
             filepath = save_json_file(data, filename)
-            qr_filepath = generate_qr_code(json.dumps(data, indent=4), f"{name.replace(' ', '_').lower()}_qr.png")
-            st.success(f"Data saved as {filepath} and QR code generated at {qr_filepath}")
+            st.success(f"Data saved as {filepath}")
 
-            st.download_button("Download JSON", data=json.dumps(data, indent=4), file_name=filename, mime="application/json")
+            qr_filename = f"{name.replace(' ', '_').lower()}_qr.png"
+            qr_filepath = generate_qr_code(json.dumps(data), qr_filename)
+            st.success(f"QR Code saved as {qr_filepath}")
             st.image(qr_filepath, caption="Generated QR Code")
+            st.download_button("Download JSON", data=json.dumps(data, indent=4), file_name=filename, mime="application/json")
 
     elif choice == "Compare Profiles":
         st.header("Compare Profiles")
@@ -125,20 +130,13 @@ def main():
                 required_keys = ["hobbies", "tastes", "skills", "preferences"]
                 for key in required_keys:
                     if key not in profile1:
-                        profile1[key] = []  # Assign an empty list if key is missing
+                        profile1[key] = []
                     if key not in profile2:
-                        profile2[key] = []  # Assign an empty list if key is missing
+                        profile2[key] = []
 
                 # Compare profiles and display the similarity percentage
                 match_percentage = compare_profiles_ai(profile1, profile2)
                 st.success(f"AI-based Match Percentage: {match_percentage:.2f}%")
-
-                if match_percentage > 70:
-                    st.write("The profiles are highly similar!")
-                elif match_percentage > 40:
-                    st.write("The profiles have some similarities.")
-                else:
-                    st.write("The profiles have little in common.")
 
             except json.JSONDecodeError:
                 st.error("Invalid JSON file. Please upload valid JSON files.")
@@ -147,31 +145,31 @@ def main():
 
     elif choice == "Load JSON File to Generate QR Code":
         st.header("Load JSON File to Generate QR Code")
-        uploaded_file = st.file_uploader("Upload a JSON file", type=["json"])
-
-        if uploaded_file:
+        uploaded_json_file = st.file_uploader("Upload a JSON file", type=["json"])
+        
+        if uploaded_json_file:
             try:
-                data = json.load(uploaded_file)
-                filename = f"qr_{os.path.basename(uploaded_file.name).replace('.json', '.png')}"
-                qr_filepath = generate_qr_code(json.dumps(data, indent=4), filename)
-                st.success(f"QR code generated at {qr_filepath}")
+                json_data = json.load(uploaded_json_file)
+                qr_filename = "uploaded_qr.png"
+                qr_filepath = generate_qr_code(json.dumps(json_data), qr_filename)
+                st.success("QR Code generated successfully!")
                 st.image(qr_filepath, caption="Generated QR Code")
-
             except json.JSONDecodeError:
                 st.error("Invalid JSON file. Please upload a valid JSON file.")
 
     elif choice == "Load and Decode QR Code":
         st.header("Load and Decode QR Code")
-        uploaded_qr_file = st.file_uploader("Upload a QR code image file", type=["png", "jpg", "jpeg"])
+        st.write("Upload an image containing a QR code to decode its content.")
 
+        uploaded_qr_file = st.file_uploader("Upload a QR Code Image", type=["png", "jpg", "jpeg"])
+        
         if uploaded_qr_file:
-            image = Image.open(uploaded_qr_file)
-            decoded_data = decode_qr_code(image)
-            if decoded_data:
-                st.success("QR code successfully decoded!")
-                st.text_area("Decoded JSON data", decoded_data, height=300)
+            decoded_data = decode_qr_code(uploaded_qr_file)
+            if "Error" in decoded_data:
+                st.error(decoded_data)
             else:
-                st.error("Failed to decode QR code. Please ensure the file is a valid QR code image.")
+                st.success("QR Code Decoded Successfully!")
+                st.write(f"Decoded Data: {decoded_data}")
 
 if __name__ == "__main__":
     main()
