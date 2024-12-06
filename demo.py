@@ -171,5 +171,6 @@ def main():
                 st.success("QR Code Decoded Successfully!")
                 st.write(f"Decoded Data: {decoded_data}")
 
+
 if __name__ == "__main__":
     main()
