@@ -5,6 +5,7 @@ import qrcode
 from pyzbar.pyzbar import decode
 from PIL import Image
 
+
 # Directory to save files
 SAVE_DIR = "saved_data"
 os.makedirs(SAVE_DIR, exist_ok=True)
