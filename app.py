@@ -53,7 +53,7 @@ def scan_qr_code_from_camera():
     Scans QR codes using the device's camera and extracts data.
     """
     st.write("**Starting camera... Press 'Stop Scanning' to quit.**")
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     qr_data = None
 
     while cap.isOpened():

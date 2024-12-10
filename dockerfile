@@ -11,11 +11,14 @@ WORKDIR /app
 
 # Copy the requirements file and application code to the container
 COPY requirements.txt /app/
-COPY demo.py /app/
+COPY app.py /app/
 
-# Install system dependencies required by zbar
+# Install system dependencies required by OpenCV, Streamlit, and zbar for QR code scanning
 RUN apt-get update && apt-get install -y \
     libzbar0 \
+    libgl1 \
+    libglib2.0-0 \
+    v4l-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -25,4 +28,4 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 EXPOSE 8501
 
 # Run the Streamlit app
-CMD ["streamlit", "run", "demo.py", "--server.port=8501", "--server.enableCORS=false"]
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.enableCORS=false"," --privileged"]
