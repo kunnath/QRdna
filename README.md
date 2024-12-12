@@ -3,6 +3,8 @@
 ## Overview
 QRdna is a user-friendly application built with Streamlit that allows you to create and share your personal information through QR codes and JSON files. Whether you’re sharing contact details or tracking habits, QRdna simplifies the process with an easy-to-use interface.
 
+![alt text](snap.png)
+
 ### Key Features
 1. **Save JSON File**
    - Enter your personal details and habits and save them as a JSON file for later use.
